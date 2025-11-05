@@ -3,7 +3,7 @@ name: Build and Publish Docker image
 on:
   push:
     branches:
-      - main
+      - oracle-jdk6
   workflow_dispatch:
 
 jobs:
@@ -30,10 +30,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}/debian12-oracle-jdk7
+          images: ghcr.io/${{ github.repository }}/debian12-oracle-jdk6
           tags: |
             type=raw,value=latest
-            type=sha
+            type=ref,event=branch
 
       - name: Build and push image
         uses: docker/build-push-action@v5
@@ -43,7 +43,3 @@ jobs:
           platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            JDK_VERSION=7u80
-            JDK_BUILD=b15
-            JDK_HASH=d54c1d3a095b4ff2b6607d096fa80163
