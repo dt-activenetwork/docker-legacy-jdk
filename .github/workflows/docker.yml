@@ -2,7 +2,7 @@ name: Build and Publish Docker image
 
 on:
   push:
-    branches:
+    branches-ignore:
       - main
   workflow_dispatch:
 
@@ -32,7 +32,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}/debian12-oracle-jdk7
           tags: |
-            type=raw,value=latest
+            type=ref,event=branch,prefix=
             type=sha
 
       - name: Build and push image
@@ -45,5 +45,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             JDK_VERSION=7u80
-            JDK_BUILD=b15
-            JDK_HASH=d54c1d3a095b4ff2b6607d096fa80163
