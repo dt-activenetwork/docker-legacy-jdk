@@ -1,33 +1,40 @@
-# Debian 12 + Oracle JDK 7 Docker Image
+# Docker Legacy JDK Images
 
-This repository builds a Debian 12 based Docker image containing the 64-bit Oracle JDK 7u80. The image is built and published automatically to GitHub Container Registry via GitHub Actions.
+This repository hosts documentation and shared test assets for a set of Debian 12–based Docker images that package legacy versions of the Oracle JDK. The `main` branch stays lightweight but now includes a small verification workflow so we can continually confirm that the published images still boot and report the correct JDK release.
 
-## Image details
+## Available images
 
-- **Base image:** `debian:12-slim`
-- **JDK version:** Oracle JDK 7u80 (64-bit)
-- **Registry:** `ghcr.io/<OWNER>/<REPO>/debian12-oracle-jdk7`
-- **Platforms:** `linux/amd64`
+The following images are pre-built and published to GitHub Container Registry:
 
-> **Note:** Downloading Oracle JDK 7 requires acceptance of Oracle's license terms. The build process uses the legacy download endpoint with the `oraclelicense=accept-securebackup-cookie` header. Ensure that you are permitted to download and use the Oracle JDK in your jurisdiction.
+| Image | Description |
+| ----- | ----------- |
+| `ghcr.io/dt-activenetwork/docker-legacy-jdk/debian12-oracle-jdk6:latest` | Debian 12 slim base with Oracle JDK 6u45 (64-bit). |
+| `ghcr.io/dt-activenetwork/docker-legacy-jdk/debian12-oracle-jdk7:latest` | Debian 12 slim base with Oracle JDK 7u80 (64-bit). |
 
-## Building locally
+Each runtime-specific branch (`debian12-oracle-jdk6`, `debian12-oracle-jdk7`, …) contains the Dockerfile, build scripts, and workflow definitions used to produce its corresponding image. Updates to an image should be committed to the appropriate branch, built, and pushed from there.
 
-To build the image locally:
+## Pulling and verifying an image
 
-```bash
-docker build --build-arg JDK_VERSION=7u80 \
-             --build-arg JDK_BUILD=b15 \
-             --build-arg JDK_HASH=d54c1d3a095b4ff2b6607d096fa80163 \
-             -t debian12-oracle-jdk7 .
-```
-
-Run the image and verify the JDK installation:
+To fetch the image and verify that the expected JDK version is installed, run:
 
 ```bash
-docker run --rm debian12-oracle-jdk7 java -version
+# Replace the tag with the image you want to validate
+IMAGE="ghcr.io/dt-activenetwork/docker-legacy-jdk/debian12-oracle-jdk7:latest"
+
+docker pull "$IMAGE"
+docker run --rm "$IMAGE" sh -c 'java --version 2>&1 || java -version 2>&1'
 ```
 
-## Continuous integration
+The `java --version`/`java -version` output should match the JDK version listed in the table above. Additional regression or integration tests that apply across images should live on this branch alongside their documentation.
 
-The GitHub Actions workflow in [`.github/workflows/docker.yml`](.github/workflows/docker.yml) builds and publishes the image on every push to the `main` branch. It produces the `latest` tag as well as a digest-specific tag derived from the Git commit SHA.
+### Continuous verification
+
+GitHub Actions runs a lightweight smoke test (`.github/workflows/verify-images.yml`) whenever changes land on `main`. The workflow logs in to GHCR, pulls each published image, and executes `java --version` (falling back to `java -version` for older distributions) to ensure the reported JDK build still matches the values in the table above.
+
+## Contributing updates
+
+1. Switch to the branch that corresponds to the image you want to change.
+2. Update the Dockerfile, scripts, or workflows as needed.
+3. Build and test the image locally.
+4. Push the branch and publish the updated container image.
+5. Reflect any cross-image documentation or test changes back on `main`.
