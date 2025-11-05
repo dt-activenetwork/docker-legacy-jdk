@@ -1,0 +1,48 @@
+name: Verify published legacy JDK images
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  verify:
+    name: Verify ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: ghcr.io/dt-activenetwork/docker-legacy-jdk/debian12-oracle-jdk6:latest
+            expected_version: "1.6.0_45"
+          - image: ghcr.io/dt-activenetwork/docker-legacy-jdk/debian12-oracle-jdk7:latest
+            expected_version: "1.7.0_80"
+    steps:
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Pull image
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          set -euo pipefail
+          echo "Pulling $IMAGE"
+          docker pull "$IMAGE"
+
+      - name: Check Java version
+        env:
+          IMAGE: ${{ matrix.image }}
+          EXPECTED_VERSION: ${{ matrix.expected_version }}
+        run: |
+          set -euo pipefail
+          output=$(docker run --rm "$IMAGE" sh -c 'java --version 2>&1 || java -version 2>&1')
+          echo "$output"
+          if ! printf '%s\n' "$output" | grep -F "$EXPECTED_VERSION"; then
+            echo "Expected version $EXPECTED_VERSION not found in output"
+            exit 1
+          fi
